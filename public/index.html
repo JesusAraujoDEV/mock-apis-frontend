@@ -33,7 +33,12 @@
         .status-badge { font-size: 0.75rem; }
         .status-badge.active { color: #22c55e; }
         .status-badge.inactive { color: #ef4444; }
-        .path-cell { font-family: monospace; color: #e2e8f0; }
+        .path-cell { font-family: monospace; color: #e2e8f0; display: flex; align-items: center; gap: 0.4rem; }
+        .copy-btn { background: none; border: none; cursor: pointer; font-size: 0.75rem; color: #64748b; padding: 0.15rem 0.3rem; border-radius: 4px; transition: all 0.15s; }
+        .copy-btn:hover { color: #3b82f6; background: #1e3a5f; }
+        .copy-btn.copied { color: #22c55e; }
+        .toast { position: fixed; bottom: 2rem; right: 2rem; background: #22c55e; color: #0f172a; padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.85rem; font-weight: 500; opacity: 0; transform: translateY(10px); transition: all 0.3s; z-index: 200; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateY(0); }
         .btn { padding: 0.4rem 0.75rem; border-radius: 6px; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: background 0.15s; }
         .btn-primary { background: #3b82f6; color: white; }
         .btn-primary:hover { background: #2563eb; }
@@ -126,6 +131,9 @@
             <div class="test-body" id="testBody"></div>
         </div>
     </div>
+
+    <!-- Toast de copiado -->
+    <div class="toast" id="copyToast">✓ URL copiada al portapapeles</div>
 
     <!-- Modal Crear/Editar -->
     <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
@@ -224,7 +232,7 @@
                 <tr>
                     <td><span class="status-badge ${ep.is_active ? 'active' : 'inactive'}">${ep.is_active ? '● Activo' : '○ Inactivo'}</span></td>
                     <td><span class="method ${ep.method}">${ep.method}</span></td>
-                    <td class="path-cell">${ep.path}</td>
+                    <td class="path-cell"><span>${ep.path}</span><button class="copy-btn" onclick="copyUrl('${ep.path}', this)" title="Copiar URL completa">📋</button></td>
                     <td>${ep.status_code}</td>
                     <td>${ep.description || '—'}</td>
                     <td class="actions">
@@ -319,6 +327,32 @@
                 closeModal();
                 loadEndpoints();
             } catch { alert('Error de red'); }
+        }
+
+        function copyUrl(path, btn) {
+            const fullUrl = `${window.location.origin}${path}`;
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                btn.classList.add('copied');
+                btn.textContent = '✓';
+                showToast(`✓ Copiado: ${fullUrl}`);
+                setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '📋'; }, 1500);
+            }).catch(() => {
+                // Fallback para contextos sin clipboard API
+                const input = document.createElement('input');
+                input.value = fullUrl;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast(`✓ Copiado: ${fullUrl}`);
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('copyToast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
         }
 
         checkHealth();
